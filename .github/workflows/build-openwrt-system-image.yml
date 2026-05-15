@@ -1,63 +1,43 @@
-# ==================================================
-# https://github.com/ophub/amlogic-s9xxx-openwrt
-# Description: Build OpenWrt system source
-# ==================================================
-
 name: Build OpenWrt System image
 
 on:
   workflow_dispatch:
     inputs:
-      source_branch:
-        description: "OpenWrt source branch"
-        required: false
-        default: "openwrt-21.02"
-        type: choice
-        options:
-          - openwrt-21.02
-          - openwrt-22.03
-          - openwrt-main
-      openwrt_board:
+      board:
         description: "Select device board"
         required: false
         default: "s905d"
         type: string
-      openwrt_kernel:
+      kernel:
         description: "Select kernel version"
         required: false
-        default: "6.18.y"
-        type: string
-      openwrt_ip:
-        description: "Set OpenWrt default IP address"
-        required: false
-        default: "192.168.1.1"
+        default: "6.1.8"
         type: string
 
 jobs:
   build:
     runs-on: ubuntu-24.04
     steps:
-      - name: Checkout
+      - name: Checkout repository
         uses: actions/checkout@v6
 
-      - name: Install required packages
+      - name: Install dependencies
         run: |
           sudo apt-get update
           sudo apt-get install -y build-essential libncurses5-dev libssl-dev git gettext unzip wget curl file
 
-      - name: Clone OpenWrt source
+      - name: Clone OpenWrt build repo
         run: |
-          git clone https://github.com/ophub/amlogic-s9xxx-openwrt.git openwrt
-          cd openwrt
+          git clone https://github.com/ophub/amlogic-s9xxx-openwrt.git build-repo
+          cd build-repo
 
-      - name: Compile firmware
+      - name: Run build script
         run: |
-          cd openwrt
-          ./build.sh ${{ inputs.openwrt_board }} -k ${{ inputs.openwrt_kernel }}
+          cd build-repo
+          ./build.sh ${{ inputs.board }} -k ${{ inputs.kernel }}
 
       - name: Upload firmware to Artifacts
-        uses: actions/upload-artifact@main
+        uses: actions/upload-artifact@v4
         with:
-          name: OpenWrt_${{ inputs.openwrt_board }}_${{ inputs.openwrt_kernel }}
-          path: ./openwrt/output/*.img.gz
-
+          name: OpenWrt_${{ inputs.board }}_${{ inputs.kernel }}
+          path: ./build-repo/output/*.img.gz
