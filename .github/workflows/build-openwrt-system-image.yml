@@ -1,29 +1,39 @@
-name: Simple OpenWrt Build
+name: Custom OpenWrt Build
 
 on:
   workflow_dispatch:
+    inputs:
+      board:
+        description: "盒子型号（比如s905d）"
+        required: true
+        default: "s905d"
+      kernel:
+        description: "内核版本（比如6.1.8）"
+        required: true
+        default: "6.1.8"
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
-      - name: Install dependencies
+      - name: 安装依赖
         run: |
           sudo apt-get update
-          sudo apt-get install -y git build-essential libncurses5-dev libssl-dev gettext unzip wget curl file
+          sudo apt-get install -y build-essential libncurses5-dev libssl-dev git gettext unzip wget curl file
 
-      - name: Clone build repo
+      - name: 拉取构建源码
         run: |
-          git clone --depth 1 https://github.com/ophub/amlogic-s9xxx-openwrt.git build
-          cd build
+          git clone --depth 1 https://github.com/ophub/amlogic-s9xxx-openwrt.git build-repo
+          cd build-repo
 
-      - name: Build firmware
+      - name: 编译固件
         run: |
-          cd build
-          ./build.sh s905d -k 6.1.8
+          cd build-repo
+          ./build.sh ${{ github.event.inputs.board }} -k ${{ github.event.inputs.kernel }}
 
-      - name: Upload firmware
+      - name: 上传固件到Artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: OpenWrt_S905D
-          path: ./build/output/*.img.gz
+          name: OpenWrt_${{ github.event.inputs.board }}_${{ github.event.inputs.kernel }}
+          path: ./build-repo/output/*.img.gz
+          retention-days: 90
